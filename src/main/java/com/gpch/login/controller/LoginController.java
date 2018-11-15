@@ -1,7 +1,18 @@
 package com.gpch.login.controller;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 import javax.validation.Valid;
 
+import com.fasterxml.jackson.core.JsonParseException;
+import com.fasterxml.jackson.databind.JsonMappingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.gpch.login.model.DropDown;
 import com.gpch.login.model.User;
 import com.gpch.login.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -9,6 +20,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
 import org.springframework.validation.BindingResult;
+import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.servlet.ModelAndView;
@@ -67,6 +79,14 @@ public class LoginController {
         modelAndView.setViewName("admin/home");
         return modelAndView;
     }
+    
+    @ModelAttribute("roleList")
+    public Map<String,String> getRoleList(){
+    	Map<String,String> roles=userService.getRoleDropDown();
+    	return roles;
+    }
+    
+   
 
 
 }
