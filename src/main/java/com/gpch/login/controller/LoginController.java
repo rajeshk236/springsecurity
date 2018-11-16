@@ -10,12 +10,15 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Controller;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.ModelAndView;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import com.gpch.login.model.User;
 import com.gpch.login.service.EmailService;
@@ -28,6 +31,10 @@ public class LoginController {
     private UserService userService;
     @Autowired
     private EmailService emailService;
+    
+    @Autowired
+    private BCryptPasswordEncoder bCryptPasswordEncoder;
+
     
     @RequestMapping(value={"/", "/login"}, method = RequestMethod.GET)
     public ModelAndView login(){
@@ -43,7 +50,7 @@ public class LoginController {
         return modelAndView;
     }
     
-    @RequestMapping(value = "/reset", method = RequestMethod.POST)
+    @RequestMapping(value = "/forgotpassword", method = RequestMethod.POST)
     public ModelAndView resetPassword(@Valid User user, BindingResult bindingResult,HttpServletRequest request) {
         ModelAndView modelAndView = new ModelAndView();
         User userExists = userService.findUserByEmail(user.getEmail());
@@ -75,6 +82,55 @@ public class LoginController {
     }
 
 
+ // Display form to reset password
+ 	@RequestMapping(value = "/reset", method = RequestMethod.GET)
+ 	public ModelAndView displayResetPasswordPage(ModelAndView modelAndView, @RequestParam("token") String token) {
+ 		
+ 		User user = userService.findUserByResetToken(token);
+
+ 		if (user!=null) { // Token found in DB
+ 			modelAndView.addObject("resetToken", token);
+ 		} else { // Token not found in DB
+ 			modelAndView.addObject("errorMessage", "Oops!  This is an invalid password reset link.");
+ 		}
+ 		 modelAndView.setViewName("resetpassword");
+ 		return modelAndView;
+ 	}
+ 	
+ 	@RequestMapping(value = "/reset", method = RequestMethod.POST)
+	public ModelAndView setNewPassword(ModelAndView modelAndView, @RequestParam Map<String, String> requestParams, RedirectAttributes redir) {
+
+		// Find the user associated with the reset token
+		 User user = userService.findUserByResetToken(requestParams.get("resetToken"));
+
+		// This should always be non-null but we check just in case
+		 if (user!=null) {
+			 // Set new password    
+			 user.setPassword(requestParams.get("password"));
+            
+			// Set the reset token to null so it cannot be used again
+			 user.setResetToken(null);
+
+			// Save user
+			userService.saveUser(user);
+
+			// In order to set a model attribute on a redirect, we must use
+			// RedirectAttributes
+			redir.addFlashAttribute("successMessage", "You have successfully reset your password.  You may now login.");
+
+			modelAndView.setViewName("redirect:login");
+			return modelAndView;
+			
+		} else {
+			modelAndView.addObject("errorMessage", "Oops!  This is an invalid password reset link.");
+			modelAndView.setViewName("resetpassword");	
+		}
+		
+		return modelAndView;
+   }
+   
+    
+    
     @RequestMapping(value="/registration", method = RequestMethod.GET)
     public ModelAndView registration(){
         ModelAndView modelAndView = new ModelAndView();

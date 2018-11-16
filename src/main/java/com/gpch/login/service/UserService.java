@@ -38,6 +38,10 @@ public class UserService {
     public User findUserByEmail(String email) {
         return userRepository.findByEmail(email);
     }
+    
+    public User findUserByResetToken(String resetToken) {
+        return userRepository.findByResetToken(resetToken);
+    }
 
     public User saveUser(User user) {
         user.setPassword(bCryptPasswordEncoder.encode(user.getPassword()));
@@ -50,12 +54,12 @@ public class UserService {
     
     public Map<String,String> getRoleDropDown()  {
     	ObjectMapper mapper = new ObjectMapper();
-    	//InputStream is = UserService.class.getResourceAsStream("/roles.json");
+    	InputStream is = UserService.class.getResourceAsStream("/roles.json");
     	
     	Map<String,String> dropDown=null;
 		try {
 		dropDown =
-			        new ObjectMapper().readValue("/roles.json", HashMap.class);
+			        new ObjectMapper().readValue(is, HashMap.class);
 		} catch (JsonParseException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
