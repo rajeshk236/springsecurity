@@ -26,7 +26,7 @@ public class UserServiceTest {
     private UserService userServiceUnderTest;
     private User user;
 
-    @Before
+   @Before
     public void setUp() {
         initMocks(this);
         userServiceUnderTest = new UserService(mockUserRepository,
@@ -45,7 +45,7 @@ public class UserServiceTest {
                 .thenReturn(user);
     }
 
-    @Test
+   @Test
     public void testFindUserByEmail() {
         // Setup
         final String email = "test@test.com";

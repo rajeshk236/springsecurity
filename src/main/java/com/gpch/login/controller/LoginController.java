@@ -1,21 +1,13 @@
 package com.gpch.login.controller;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
+import javax.servlet.http.HttpServletRequest;
 import javax.validation.Valid;
 
-import com.fasterxml.jackson.core.JsonParseException;
-import com.fasterxml.jackson.databind.JsonMappingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.gpch.login.model.DropDown;
-import com.gpch.login.model.User;
-import com.gpch.login.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.mail.SimpleMailMessage;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
@@ -25,16 +17,60 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.servlet.ModelAndView;
 
+import com.gpch.login.model.User;
+import com.gpch.login.service.EmailService;
+import com.gpch.login.service.UserService;
+
 @Controller
 public class LoginController {
 
     @Autowired
     private UserService userService;
-
+    @Autowired
+    private EmailService emailService;
+    
     @RequestMapping(value={"/", "/login"}, method = RequestMethod.GET)
     public ModelAndView login(){
         ModelAndView modelAndView = new ModelAndView();
         modelAndView.setViewName("login");
+        return modelAndView;
+    }
+    
+    @RequestMapping(value={"/forgotpassword"}, method = RequestMethod.GET)
+    public ModelAndView forgotpassword(){
+        ModelAndView modelAndView = new ModelAndView();
+        modelAndView.setViewName("forgotpassword");
+        return modelAndView;
+    }
+    
+    @RequestMapping(value = "/reset", method = RequestMethod.POST)
+    public ModelAndView resetPassword(@Valid User user, BindingResult bindingResult,HttpServletRequest request) {
+        ModelAndView modelAndView = new ModelAndView();
+        User userExists = userService.findUserByEmail(user.getEmail());
+        if (userExists == null) {
+            bindingResult
+                    .rejectValue("email", "error.user",
+                            "User not found with the email provided");
+        }else {
+        	userExists.setResetToken(UUID.randomUUID().toString());
+        	userService.saveUser(userExists);
+        	String appUrl = request.getScheme() + "://" + request.getServerName();
+			
+			// Email message
+			SimpleMailMessage passwordResetEmail = new SimpleMailMessage();
+			passwordResetEmail.setFrom("support@demo.com");
+			passwordResetEmail.setTo(user.getEmail());
+			passwordResetEmail.setSubject("Password Reset Request");
+			passwordResetEmail.setText("To reset your password, click the link below:\n" + appUrl
+					+ "/reset?token=" +userExists.getResetToken());
+			
+			emailService.sendEmail(passwordResetEmail);
+
+			// Add success message to view
+			modelAndView.addObject("successMessage", "A password reset link has been sent to " + user.getEmail());
+	
+        }
+        modelAndView.setViewName("forgotpassword");
         return modelAndView;
     }
 
